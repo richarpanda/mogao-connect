@@ -65,7 +65,11 @@ export default function Login() {
                         resizeMode="contain"
                     />
                     <View
-                        style={{ height: 1, width: 40, backgroundColor: 'rgba(201,162,39,0.6)', marginTop: 20, marginBottom: 50 }}
+                        style={{
+                            height: 1, width: 40, backgroundColor: 'rgba(201,162,39,0.6)',
+                            marginTop: 20,
+                            marginBottom: -10
+                        }}
                     />
                 </View>
 

@@ -1,6 +1,7 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useUsuario } from '../../lib/hooks/use-usuario';
 
@@ -11,7 +12,7 @@ const ROL_LABEL: Record<string, string> = {
     vendedor: 'Vendedor / Propietario',
 };
 
-const ESTATUS_AUTORIZACION_LABEL: Record<string, string> = {
+const ESTATUS_LABEL: Record<string, string> = {
     pendiente: 'Verificación pendiente',
     autorizado: 'Verificado',
     rechazado: 'Verificación rechazada',
@@ -19,7 +20,10 @@ const ESTATUS_AUTORIZACION_LABEL: Record<string, string> = {
 
 export default function Perfil() {
     const router = useRouter();
-    const { usuario, agente, loading } = useUsuario();
+    const { usuario, agente, vendedorCuenta, loading } = useUsuario();
+
+    // El rol 'agente' usa la fila de agentes; 'vendedor' usa vendedores_cuenta
+    const rolExt = agente ?? vendedorCuenta ?? null;
 
     async function handleLogout() {
         Alert.alert('Cerrar sesión', '¿Estás seguro de que quieres salir?', [
@@ -42,81 +46,136 @@ export default function Perfil() {
         );
     }
 
+    const iniciales = [usuario?.nombre, usuario?.email?.charAt(0).toUpperCase()]
+        .filter(Boolean)[0]
+        ?.charAt(0)
+        .toUpperCase() ?? '?';
+
     return (
         <SafeAreaView className="flex-1 bg-mogao-cream" edges={['top', 'bottom']}>
-            <View className="flex-1 px-5 pt-6">
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+                showsVerticalScrollIndicator={false}
+            >
                 <Text className="text-2xl font-bold text-gray-900 mb-6">Mi perfil</Text>
 
-                {/* Avatar placeholder */}
-                <View className="items-center mb-6">
-                    <View className="w-20 h-20 bg-mogao-cream rounded-full items-center justify-center mb-3">
-                        <Text className="text-3xl font-bold text-mogao-teal">
-                            {usuario?.nombre?.charAt(0).toUpperCase() ?? '?'}
-                        </Text>
+                {/* Avatar + info */}
+                <View
+                    className="bg-white rounded-2xl p-5 items-center mb-4"
+                    style={{
+                        shadowColor: '#0E3B36',
+                        shadowOpacity: 0.06,
+                        shadowRadius: 12,
+                        elevation: 2,
+                    }}
+                >
+                    <View
+                        className="w-20 h-20 rounded-full items-center justify-center mb-3 bg-mogao-teal"
+                    >
+                        <Text className="text-3xl font-bold text-white">{iniciales}</Text>
                     </View>
                     <Text className="text-xl font-bold text-gray-900">{usuario?.nombre ?? '—'}</Text>
-                    <Text className="text-sm text-gray-500">{usuario?.email ?? '—'}</Text>
+                    <Text className="text-sm text-gray-500 mb-3">{usuario?.email ?? '—'}</Text>
 
-                    {/* Rol badge */}
                     {usuario && (
-                        <View className="mt-2 bg-mogao-cream px-4 py-1 rounded-full">
-                            <Text className="text-sm font-medium text-mogao-teal">
+                        <View className="bg-mogao-cream px-4 py-1.5 rounded-full">
+                            <Text className="text-sm font-semibold text-mogao-teal">
                                 {ROL_LABEL[usuario.rol] ?? usuario.rol}
                             </Text>
                         </View>
                     )}
                 </View>
 
-                {/* Badge de estatus de verificación (solo asesores/vendedores) */}
-                {agente && (
+                {/* Badge verificación — agentes y vendedores */}
+                {rolExt && (
                     <View
-                        className={`rounded-xl p-4 mb-4 ${
-                            agente.estatus_autorizacion === 'autorizado'
+                        className={`rounded-2xl p-4 mb-4 flex-row items-start gap-3 ${
+                            rolExt.estatus_autorizacion === 'autorizado'
                                 ? 'bg-green-50'
-                                : agente.estatus_autorizacion === 'rechazado'
+                                : rolExt.estatus_autorizacion === 'rechazado'
                                 ? 'bg-red-50'
                                 : 'bg-yellow-50'
                         }`}
                     >
-                        <Text
-                            className={`text-sm font-semibold ${
-                                agente.estatus_autorizacion === 'autorizado'
-                                    ? 'text-green-700'
-                                    : agente.estatus_autorizacion === 'rechazado'
-                                    ? 'text-red-700'
-                                    : 'text-yellow-700'
-                            }`}
-                        >
-                            {agente.estatus_autorizacion === 'autorizado' ? '✓ ' : '⏳ '}
-                            {ESTATUS_AUTORIZACION_LABEL[agente.estatus_autorizacion]}
-                        </Text>
-                        {agente.estatus_autorizacion === 'pendiente' && (
-                            <Text className="text-xs text-yellow-600 mt-1">
-                                El equipo de Mogao revisará tu cuenta pronto.
+                        <Ionicons
+                            name={
+                                rolExt.estatus_autorizacion === 'autorizado'
+                                    ? 'checkmark-circle'
+                                    : rolExt.estatus_autorizacion === 'rechazado'
+                                    ? 'close-circle'
+                                    : 'time-outline'
+                            }
+                            size={20}
+                            color={
+                                rolExt.estatus_autorizacion === 'autorizado'
+                                    ? '#16a34a'
+                                    : rolExt.estatus_autorizacion === 'rechazado'
+                                    ? '#dc2626'
+                                    : '#d97706'
+                            }
+                        />
+                        <View className="flex-1">
+                            <Text
+                                className={`text-sm font-semibold ${
+                                    rolExt.estatus_autorizacion === 'autorizado'
+                                        ? 'text-green-700'
+                                        : rolExt.estatus_autorizacion === 'rechazado'
+                                        ? 'text-red-700'
+                                        : 'text-yellow-700'
+                                }`}
+                            >
+                                {ESTATUS_LABEL[rolExt.estatus_autorizacion]}
                             </Text>
-                        )}
-                        {agente.estatus_autorizacion === 'rechazado' && agente.motivo_rechazo && (
-                            <Text className="text-xs text-red-600 mt-1">{agente.motivo_rechazo}</Text>
-                        )}
+                            {rolExt.estatus_autorizacion === 'pendiente' && (
+                                <Text className="text-xs text-yellow-600 mt-0.5">
+                                    El equipo de Mogao revisará tu cuenta en breve.
+                                </Text>
+                            )}
+                            {rolExt.estatus_autorizacion === 'rechazado' && rolExt.motivo_rechazo && (
+                                <Text className="text-xs text-red-600 mt-0.5">
+                                    {rolExt.motivo_rechazo}
+                                </Text>
+                            )}
+                        </View>
                     </View>
                 )}
 
-                {/* Placeholder — opciones de perfil (Fase 1 completa: KYC, radio de servicio, etc.) */}
-                <View className="bg-gray-50 rounded-xl p-4 mb-4">
-                    <Text className="text-xs text-gray-400 text-center">
-                        Editar perfil, KYC y área de servicio — Fase 1 completa
-                    </Text>
+                {/* Opciones de perfil */}
+                <View
+                    className="bg-white rounded-2xl mb-4 overflow-hidden"
+                    style={{ shadowColor: '#0E3B36', shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 }}
+                >
+                    {[
+                        { icon: 'person-outline', label: 'Editar perfil', onPress: () => {} },
+                        { icon: 'shield-checkmark-outline', label: 'Verificación de identidad (KYC)', onPress: () => {} },
+                        { icon: 'lock-closed-outline', label: 'Cambiar contraseña', onPress: () => {} },
+                    ].map((item, i, arr) => (
+                        <TouchableOpacity
+                            key={item.label}
+                            className={`flex-row items-center gap-3 px-5 py-4 ${
+                                i < arr.length - 1 ? 'border-b border-gray-50' : ''
+                            }`}
+                            onPress={item.onPress}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name={item.icon as any} size={20} color="#0E3B36" />
+                            <Text className="flex-1 text-sm font-medium text-gray-800">{item.label}</Text>
+                            <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
-                <View className="flex-1" />
-
+                {/* Cerrar sesión */}
                 <TouchableOpacity
                     onPress={handleLogout}
-                    className="border border-red-200 rounded-xl py-4 items-center mb-4"
+                    className="flex-row items-center justify-center gap-2 border border-red-100 bg-red-50 rounded-2xl py-4"
+                    activeOpacity={0.8}
                 >
-                    <Text className="text-red-500 font-semibold">Cerrar sesión</Text>
+                    <Ionicons name="log-out-outline" size={18} color="#ef4444" />
+                    <Text className="text-red-500 font-semibold text-sm">Cerrar sesión</Text>
                 </TouchableOpacity>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }

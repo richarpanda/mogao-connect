@@ -116,6 +116,7 @@ El CRM (Next.js 14, repo separado en `../mogao-crm/`) comparte la misma base de 
 - **Desarrollo iterativo por fases.** Cada fase del roadmap vive en un archivo dentro de `docs/features/`. Lee el archivo de la fase correspondiente antes de empezar a construirla — no adivines el alcance.
 - **Un módulo/pantalla a la vez.** Si una fase toca muchos archivos, divide el trabajo y avisa antes de tocar todo de un jalón.
 - **QA real antes de dar por cerrada una tarea** — no solo "compila", sino verificar que el comportamiento coincide con lo descrito en el archivo de fase, incluyendo casos borde por rol.
+- **Documento QA obligatorio por fase.** Al terminar cada fase (o bloque de fases relacionadas), crear `docs/qa/fase-XX-nombre.md` siguiendo la estructura establecida en los documentos existentes: tabla de casos de prueba por flujo, columnas de resultado (✅ Pasa / ❌ Falla / ⚠️ Parcial), notas de bugs encontrados, y estado general. Este documento es la señal de "fase lista para QA" — sin él, la fase no se considera cerrada.
 - Si algo en una fase parece contradecir una decisión ya tomada aquí (estatus, roles, esquema), señálalo explícitamente en vez de sobreescribirlo en silencio.
 
 ## Roadmap general (detalle completo en `docs/features/`)

@@ -1,7 +1,19 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    Alert,
+    ScrollView,
+    Image,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+
+const LOGO = require('../../assets/logo-mogao-connect.png');
 
 type Rol = 'cliente' | 'vendedor' | 'agente';
 
@@ -9,7 +21,7 @@ type RolOption = {
     id: Rol;
     titulo: string;
     descripcion: string;
-    emoji: string;
+    icon: string;
 };
 
 const ROL_OPTIONS: RolOption[] = [
@@ -17,19 +29,19 @@ const ROL_OPTIONS: RolOption[] = [
         id: 'cliente',
         titulo: 'Comprador',
         descripcion: 'Busca propiedades y solicita visitas con asesores de la red.',
-        emoji: '🏠',
+        icon: 'home-outline',
     },
     {
         id: 'vendedor',
         titulo: 'Vendedor / Propietario',
         descripcion: 'Publica tu propiedad para que los asesores de Mogao la promuevan.',
-        emoji: '🔑',
+        icon: 'key-outline',
     },
     {
         id: 'agente',
         titulo: 'Asesor independiente',
         descripcion: 'Atiende solicitudes de compra y acompaña a compradores en el proceso.',
-        emoji: '🤝',
+        icon: 'briefcase-outline',
     },
 ];
 
@@ -45,36 +57,10 @@ export default function RoleSelect() {
         }
         setLoading(true);
         try {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
-            if (!user) throw new Error('Sin sesión activa');
-
-            // Actualizar rol en usuarios (la fila ya existe — la crea el trigger on_auth_user_created)
-            const { error: rolErr } = await supabase
-                .from('usuarios')
-                .update({ rol: selected })
-                .eq('id', user.id);
+            const { error: rolErr } = await supabase.rpc('set_initial_rol', { p_rol: selected });
             if (rolErr) throw rolErr;
 
-            // Crear fila de rol específico según la selección
-            if (selected === 'agente') {
-                const { error: agenteErr } = await supabase.from('agentes').insert({
-                    usuario_id: user.id,
-                    // estatus_autorizacion = 'pendiente', origen = 'app' (defaults del esquema)
-                });
-                if (agenteErr) throw agenteErr;
-            }
-
-            if (selected === 'vendedor') {
-                // Requiere migración fase-1-schema.sql: tabla vendedores_cuenta + enum 'vendedor'
-                const { error: vendErr } = await supabase.from('vendedores_cuenta').insert({
-                    usuario_id: user.id,
-                    // estatus_autorizacion = 'pendiente', origen = 'app' (defaults)
-                });
-                if (vendErr) throw vendErr;
-            }
-
+            await AsyncStorage.removeItem('needsRoleSelect');
             router.replace('/(tabs)');
         } catch (err: any) {
             console.error('[role-select]', err);
@@ -85,60 +71,118 @@ export default function RoleSelect() {
     }
 
     return (
-        <View className="flex-1 bg-white">
-            <ScrollView
-                className="flex-1"
-                contentContainerStyle={{
-                    flexGrow: 1,
-                    paddingHorizontal: 24,
-                    paddingTop: 60,
-                    paddingBottom: 32,
-                }}
-            >
-                <Text className="text-3xl font-bold text-gray-900 mb-2">¿Cómo usarás Mogao?</Text>
-                <Text className="text-base text-gray-500 mb-10">
-                    Puedes agregar roles adicionales más adelante desde tu perfil.
-                </Text>
-
-                <View className="gap-4 mb-10">
-                    {ROL_OPTIONS.map((option) => {
-                        const isSelected = selected === option.id;
-                        return (
-                            <TouchableOpacity
-                                key={option.id}
-                                onPress={() => setSelected(option.id)}
-                                className={`rounded-2xl border-2 p-5 ${
-                                    isSelected
-                                        ? 'border-mogao-gold bg-mogao-cream'
-                                        : 'border-gray-200 bg-white'
-                                }`}
-                            >
-                                <Text className="text-3xl mb-2">{option.emoji}</Text>
-                                <Text
-                                    className={`text-lg font-bold mb-1 ${
-                                        isSelected ? 'text-mogao-teal' : 'text-gray-900'
-                                    }`}
-                                >
-                                    {option.titulo}
-                                </Text>
-                                <Text className="text-sm text-gray-500">{option.descripcion}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+        <View className="flex-1 bg-mogao-teal">
+            <SafeAreaView className="flex-1" edges={['top']}>
+                {/* Encabezado */}
+                <View className="items-center justify-center pt-8 pb-10 px-6">
+                    <Image
+                        source={LOGO}
+                        style={{ height: 44 }}
+                        resizeMode="contain"
+                    />
+                    <View
+                        style={{ height: 1, width: 40, backgroundColor: 'rgba(201,162,39,0.6)', marginTop: 18, marginBottom: 12 }}
+                    />
+                    <Text
+                        style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '500' }}
+                    >
+                        Únete a la red Mogao
+                    </Text>
                 </View>
 
-                <TouchableOpacity
-                    className={`rounded-xl py-4 items-center ${
-                        !selected || loading ? 'bg-mogao-tealLight' : 'bg-mogao-teal'
-                    }`}
-                    onPress={handleConfirm}
-                    disabled={!selected || loading}
+                <ScrollView
+                    className="flex-1 bg-mogao-cream rounded-t-3xl"
+                    contentContainerStyle={{ padding: 28, paddingBottom: 48 }}
+                    showsVerticalScrollIndicator={false}
                 >
-                    <Text className="text-white font-semibold text-base">
-                        {loading ? 'Guardando...' : 'Continuar'}
+                    <Text
+                        style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '600', color: '#8A6C1B', marginBottom: 4, marginTop: 4 }}
+                    >
+                        Tipo de cuenta
                     </Text>
-                </TouchableOpacity>
-            </ScrollView>
+                    <Text className="text-3xl font-bold text-mogao-teal mb-1">
+                        ¿Cómo usarás Mogao?
+                    </Text>
+                    <Text className="text-sm text-gray-500 mb-7">
+                        Puedes agregar roles adicionales más adelante desde tu perfil.
+                    </Text>
+
+                    <View className="gap-3 mb-8">
+                        {ROL_OPTIONS.map((option) => {
+                            const isSelected = selected === option.id;
+                            return (
+                                <TouchableOpacity
+                                    key={option.id}
+                                    onPress={() => setSelected(option.id)}
+                                    activeOpacity={0.8}
+                                    className={`rounded-2xl p-5 flex-row items-center gap-4 ${
+                                        isSelected
+                                            ? 'bg-mogao-teal'
+                                            : 'bg-white border border-gray-100'
+                                    }`}
+                                    style={
+                                        isSelected
+                                            ? {}
+                                            : {
+                                                shadowColor: '#0E3B36',
+                                                shadowOpacity: 0.05,
+                                                shadowRadius: 8,
+                                                elevation: 2,
+                                              }
+                                    }
+                                >
+                                    <View
+                                        className={`w-12 h-12 rounded-xl items-center justify-center ${
+                                            isSelected ? 'bg-white/20' : 'bg-mogao-cream'
+                                        }`}
+                                    >
+                                        <Ionicons
+                                            name={option.icon as any}
+                                            size={22}
+                                            color={isSelected ? '#C9A227' : '#0E3B36'}
+                                        />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text
+                                            className={`text-base font-bold mb-0.5 ${
+                                                isSelected ? 'text-white' : 'text-gray-900'
+                                            }`}
+                                        >
+                                            {option.titulo}
+                                        </Text>
+                                        <Text
+                                            className={`text-xs leading-4 ${
+                                                isSelected ? 'text-white/70' : 'text-gray-500'
+                                            }`}
+                                        >
+                                            {option.descripcion}
+                                        </Text>
+                                    </View>
+                                    {isSelected && (
+                                        <Ionicons name="checkmark-circle" size={22} color="#C9A227" />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
+                    <TouchableOpacity
+                        className={`flex-row items-center justify-center gap-2 rounded-xl py-3.5 ${
+                            !selected || loading ? 'bg-mogao-tealLight' : 'bg-mogao-teal'
+                        }`}
+                        onPress={handleConfirm}
+                        disabled={!selected || loading}
+                        activeOpacity={0.85}
+                    >
+                        <Text className="text-white font-semibold text-sm">
+                            {loading ? 'Guardando...' : 'Continuar'}
+                        </Text>
+                        {!loading && selected && (
+                            <Ionicons name="arrow-forward" size={15} color="white" />
+                        )}
+                    </TouchableOpacity>
+                </ScrollView>
+            </SafeAreaView>
         </View>
     );
 }

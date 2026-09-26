@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { EstatusProceso, ProcesoConDetalle } from '../../lib/types/database';
+import { EstatusProceso, ProcesoConDetalle, ProcesoDocumento } from '../../lib/types/database';
 import { formatFecha, formatPrecio } from '../../lib/utils/format';
 
 type StepInfo = {
@@ -45,7 +45,7 @@ export default function ProcesoDetalle() {
                 const { data, error } = await supabase
                     .from('procesos_compra')
                     .select(
-                        '*, propiedades(id, titulo, direccion, ciudad), proceso_historial(*)',
+                        '*, propiedades(id, titulo, direccion, ciudad), proceso_historial(*), proceso_documentos(*)',
                     )
                     .eq('id', id)
                     .single();
@@ -54,6 +54,9 @@ export default function ProcesoDetalle() {
                     ...data,
                     proceso_historial: [...data.proceso_historial].sort(
                         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+                    ),
+                    proceso_documentos: [...(data.proceso_documentos ?? [])].sort(
+                        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
                     ),
                 } as ProcesoConDetalle;
                 setProceso(p);
@@ -188,6 +191,33 @@ export default function ProcesoDetalle() {
                         );
                     })}
                 </View>
+
+                {/* Documentos compartidos por el asesor */}
+                {proceso.proceso_documentos.length > 0 && (
+                    <View className="px-5 mt-4">
+                        <Text className="text-base font-semibold text-gray-900 mb-3">
+                            Documentos
+                        </Text>
+                        {proceso.proceso_documentos.map((doc: ProcesoDocumento) => (
+                            <View
+                                key={doc.id}
+                                className="flex-row items-center gap-3 bg-white rounded-xl px-4 py-3 mb-2"
+                                style={{ borderWidth: 1, borderColor: '#F3F4F6' }}
+                            >
+                                <Ionicons name="document-text-outline" size={20} color="#0E3B36" />
+                                <View className="flex-1">
+                                    <Text className="text-sm font-medium text-gray-800" numberOfLines={1}>
+                                        {doc.nombre_archivo}
+                                    </Text>
+                                    <Text className="text-xs text-gray-400 mt-0.5 capitalize">
+                                        {doc.tipo.replace(/_/g, ' ')}
+                                    </Text>
+                                </View>
+                                <Ionicons name="download-outline" size={18} color="#9CA3AF" />
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 {/* Historial de cambios */}
                 {proceso.proceso_historial.length > 0 && (

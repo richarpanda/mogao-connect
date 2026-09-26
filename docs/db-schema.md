@@ -2,7 +2,7 @@
 
 **Este archivo es la fuente de verdad del esquema real.** Si necesitas una columna, tabla o relación que no está aquí, pregúntale a Ricardo — no la inventes ni asumas que existe. Cuando el esquema cambie de verdad (Ricardo corre una migración), este archivo se actualiza para reflejarlo — un esquema desactualizado aquí es peor que no tener el archivo.
 
-Última verificación contra la base de datos real: 2026-09-18 — migraciones fase-1 y fase-3 aplicadas.
+Última verificación contra la base de datos real: 2026-09-25 — columnas de `propiedades` confirmadas (vendedor_id → vendedores.id).
 
 ---
 
@@ -180,10 +180,16 @@ Funciones helper usadas en las políticas: `current_rol()`, `current_agente_id()
 - `citas`: admin todo; el agente asignado todo (`agente_id = current_agente_id()`); el contacto puede leer las suyas
 - `procesos_compra` / `proceso_historial` / `proceso_documentos`: admin todo, agente dueño todo, contacto solo lectura de lo suyo
 - `propiedades`: admin todo; agente autenticado puede leer todas; `cliente` y `vendedor` pueden leer todas las propiedades con `estatus = 'disponible'` (policy `cliente_vendedor_read_disponibles`, aplicada 2026-09-20)
-- `propiedad_fotos` / `propiedad_documentos`: admin todo; agente/cliente autenticados pueden leer; fotos con lectura pública para `anon`
+- `propiedad_fotos` / `propiedad_documentos`: admin todo; agente/cliente/vendedor autenticados pueden leer; fotos con lectura pública para `anon` — ⚠️ verificar que la política incluya `vendedor`, de lo contrario el join devuelve fotos vacías para ese rol
 - `tipos_propiedad`: admin todo; lectura para cualquier usuario autenticado
 - `usuarios`: admin todo; cada quien lee su propia fila (`id = auth.uid()`)
 - `vendedores` (tabla CRM): solo admin
+
+---
+
+## Funciones RPC existentes
+
+- **`set_initial_rol(p_rol text)`** — SECURITY DEFINER. Actualiza `usuarios.rol` para el usuario autenticado. Solo permite valores `cliente`, `agente`, `vendedor` (bloquea `admin`). Usado por `role-select.tsx` al completar el registro.
 
 ---
 

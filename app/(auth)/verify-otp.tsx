@@ -8,6 +8,7 @@ import {
     Image,
     ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,6 +110,7 @@ export default function VerifyOtp() {
 
             if (type === 'signup') {
                 // Cuenta nueva verificada → selección de rol
+                await AsyncStorage.setItem('needsRoleSelect', '1');
                 router.replace('/(auth)/role-select' as any);
             }
             // Para type='email', onAuthStateChange en AuthProvider redirige a tabs

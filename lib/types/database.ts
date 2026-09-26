@@ -134,7 +134,29 @@ export type ProcesoHistorial = {
     created_at: string;
 };
 
+export type VendedorCuenta = {
+    id: string;
+    usuario_id: string;
+    activo: boolean;
+    estatus_autorizacion: 'pendiente' | 'autorizado' | 'rechazado';
+    motivo_rechazo: string | null;
+    origen: 'app' | 'crm';
+    created_at: string;
+    updated_at: string;
+};
+
+export type ProcesoDocumento = {
+    id: string;
+    proceso_id: string;
+    tipo: string;
+    nombre_archivo: string;
+    url: string;
+    subido_por: string;
+    created_at: string;
+};
+
 export type ProcesoConDetalle = ProcesoCompra & {
     propiedades: Pick<Propiedad, 'id' | 'titulo' | 'direccion' | 'ciudad'>;
     proceso_historial: ProcesoHistorial[];
+    proceso_documentos: ProcesoDocumento[];
 };

@@ -9,6 +9,7 @@ import {
     ScrollView,
     Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 
@@ -31,7 +32,7 @@ export default function Register() {
         }
         setLoading(true);
         try {
-            const { error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -39,8 +40,18 @@ export default function Register() {
                 },
             });
             if (error) throw error;
-            // Después del registro exitoso → selección de rol
-            router.replace('/(auth)/role-select');
+
+            if (data.session) {
+                // Sin confirmación de email activa → directo a rol
+                await AsyncStorage.setItem('needsRoleSelect', '1');
+                router.replace('/(auth)/role-select' as any);
+            } else {
+                // Supabase requiere confirmar email — pantalla OTP
+                router.replace({
+                    pathname: '/(auth)/verify-otp' as any,
+                    params: { email, type: 'signup' },
+                });
+            }
         } catch (err: any) {
             Alert.alert('Error al registrarse', err.message ?? 'Inténtalo de nuevo.');
         } finally {

@@ -3,7 +3,6 @@ import {
     View,
     Text,
     TouchableOpacity,
-    Alert,
     ScrollView,
     Image,
 } from 'react-native';
@@ -12,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { AppAlert, useAppAlert } from '../../lib/components/app-alert';
 
 const LOGO = require('../../assets/logo-mogao-connect.png');
 
@@ -47,12 +47,13 @@ const ROL_OPTIONS: RolOption[] = [
 
 export default function RoleSelect() {
     const router = useRouter();
+    const { show, alertProps } = useAppAlert();
     const [selected, setSelected] = useState<Rol | null>(null);
     const [loading, setLoading] = useState(false);
 
     async function handleConfirm() {
         if (!selected) {
-            Alert.alert('Selecciona un rol', 'Elige cómo quieres usar Mogao.');
+            show({ type: 'info', title: 'Selecciona un rol', message: 'Elige cómo quieres usar Mogao.' });
             return;
         }
         setLoading(true);
@@ -64,7 +65,7 @@ export default function RoleSelect() {
             router.replace('/(tabs)');
         } catch (err: any) {
             console.error('[role-select]', err);
-            Alert.alert('Error', err.message ?? 'No se pudo guardar tu rol. Inténtalo de nuevo.');
+            show({ type: 'error', title: 'Error', message: err.message ?? 'No se pudo guardar tu rol. Inténtalo de nuevo.' });
         } finally {
             setLoading(false);
         }
@@ -73,7 +74,6 @@ export default function RoleSelect() {
     return (
         <View className="flex-1 bg-mogao-teal">
             <SafeAreaView className="flex-1" edges={['top']}>
-                {/* Encabezado */}
                 <View className="items-center justify-center pt-8 pb-10 px-6">
                     <Image
                         source={LOGO}
@@ -167,7 +167,7 @@ export default function RoleSelect() {
                     </View>
 
                     <TouchableOpacity
-                        className={`flex-row items-center justify-center gap-2 rounded-xl py-3.5 ${
+                        className={`items-center justify-center rounded-xl py-3.5 ${
                             !selected || loading ? 'bg-mogao-tealLight' : 'bg-mogao-teal'
                         }`}
                         onPress={handleConfirm}
@@ -177,12 +177,10 @@ export default function RoleSelect() {
                         <Text className="text-white font-semibold text-sm">
                             {loading ? 'Guardando...' : 'Continuar'}
                         </Text>
-                        {!loading && selected && (
-                            <Ionicons name="arrow-forward" size={15} color="white" />
-                        )}
                     </TouchableOpacity>
                 </ScrollView>
             </SafeAreaView>
+            <AppAlert {...alertProps} />
         </View>
     );
 }

@@ -1,7 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../lib/context/auth-context';
 
 export default function TabsLayout() {
+    const { modoActivo } = useAuth();
+    const esAsesor = modoActivo === 'asesor';
+
     return (
         <Tabs
             screenOptions={{
@@ -23,9 +27,13 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="solicitudes"
                 options={{
-                    title: 'Solicitudes',
+                    title: esAsesor ? 'Solicitudes' : 'Mis procesos',
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="calendar-outline" size={size} color={color} />
+                        <Ionicons
+                            name={esAsesor ? 'calendar-outline' : 'document-text-outline'}
+                            size={size}
+                            color={color}
+                        />
                     ),
                 }}
             />

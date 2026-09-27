@@ -7,14 +7,15 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { AppAlert, useAppAlert } from '../../lib/components/app-alert';
 
 export default function Register() {
     const router = useRouter();
+    const { show, alertProps } = useAppAlert();
     const [nombre, setNombre] = useState('');
     const [apellido, setApellido] = useState('');
     const [email, setEmail] = useState('');
@@ -23,11 +24,11 @@ export default function Register() {
 
     async function handleRegister() {
         if (!nombre || !email || !password) {
-            Alert.alert('Campos requeridos', 'Completa todos los campos obligatorios.');
+            show({ type: 'warning', title: 'Campos requeridos', message: 'Completa todos los campos obligatorios.' });
             return;
         }
         if (password.length < 6) {
-            Alert.alert('Contraseña muy corta', 'Usa al menos 6 caracteres.');
+            show({ type: 'warning', title: 'Contraseña muy corta', message: 'Usa al menos 6 caracteres.' });
             return;
         }
         setLoading(true);
@@ -42,18 +43,16 @@ export default function Register() {
             if (error) throw error;
 
             if (data.session) {
-                // Sin confirmación de email activa → directo a rol
                 await AsyncStorage.setItem('needsRoleSelect', '1');
                 router.replace('/(auth)/role-select' as any);
             } else {
-                // Supabase requiere confirmar email — pantalla OTP
                 router.replace({
                     pathname: '/(auth)/verify-otp' as any,
                     params: { email, type: 'signup' },
                 });
             }
         } catch (err: any) {
-            Alert.alert('Error al registrarse', err.message ?? 'Inténtalo de nuevo.');
+            show({ type: 'error', title: 'Error al registrarse', message: err.message ?? 'Inténtalo de nuevo.' });
         } finally {
             setLoading(false);
         }
@@ -113,7 +112,7 @@ export default function Register() {
                 />
 
                 <TouchableOpacity
-                    className={`rounded-xl py-4 items-center mb-4 ${loading ? 'bg-blue-300' : 'bg-blue-600'}`}
+                    className={`rounded-xl py-4 items-center mb-4 ${loading ? 'bg-mogao-tealLight' : 'bg-mogao-teal'}`}
                     onPress={handleRegister}
                     disabled={loading}
                 >
@@ -122,10 +121,9 @@ export default function Register() {
                     </Text>
                 </TouchableOpacity>
 
-                {/* TODO Fase 1: Google OAuth */}
                 <TouchableOpacity
                     className="border border-gray-300 rounded-xl py-4 items-center mb-8"
-                    onPress={() => Alert.alert('Próximamente', 'Login con Google estará disponible pronto.')}
+                    onPress={() => show({ type: 'info', title: 'Próximamente', message: 'Login con Google estará disponible pronto.' })}
                 >
                     <Text className="text-gray-700 font-semibold text-base">Continuar con Google</Text>
                 </TouchableOpacity>
@@ -134,11 +132,12 @@ export default function Register() {
                     <Text className="text-gray-500">¿Ya tienes cuenta? </Text>
                     <Link href="/(auth)/login" asChild>
                         <TouchableOpacity>
-                            <Text className="text-blue-600 font-semibold">Inicia sesión</Text>
+                            <Text className="text-mogao-gold font-semibold">Inicia sesión</Text>
                         </TouchableOpacity>
                     </Link>
                 </View>
             </ScrollView>
+            <AppAlert {...alertProps} />
         </KeyboardAvoidingView>
     );
 }

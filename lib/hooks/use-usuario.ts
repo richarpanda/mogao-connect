@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { Agente, Usuario, VendedorCuenta } from '../types/database';
+import { Agente, Contacto, Usuario, VendedorCuenta } from '../types/database';
 
 type UsuarioCompleto = {
     usuario: Usuario | null;
     agente: Agente | null;
+    contacto: Contacto | null;
     vendedorCuenta: VendedorCuenta | null;
+    tieneAmbosRoles: boolean;
     loading: boolean;
     refetch: () => void;
 };
@@ -13,6 +15,7 @@ type UsuarioCompleto = {
 export function useUsuario(): UsuarioCompleto {
     const [usuario, setUsuario] = useState<Usuario | null>(null);
     const [agente, setAgente] = useState<Agente | null>(null);
+    const [contacto, setContacto] = useState<Contacto | null>(null);
     const [vendedorCuenta, setVendedorCuenta] = useState<VendedorCuenta | null>(null);
     const [loading, setLoading] = useState(true);
     const [tick, setTick] = useState(0);
@@ -33,19 +36,21 @@ export function useUsuario(): UsuarioCompleto {
                     .select('*')
                     .eq('id', user.id)
                     .single();
-
                 if (uErr) throw uErr;
                 if (cancelled) return;
                 setUsuario(u);
 
-                if (u.rol === 'agente') {
-                    const { data: a } = await supabase
-                        .from('agentes')
-                        .select('*')
-                        .eq('usuario_id', user.id)
-                        .maybeSingle();
-                    if (!cancelled) setAgente(a ?? null);
-                } else if (u.rol === 'vendedor') {
+                // Siempre consultar ambas tablas para soporte de toggle multi-rol.
+                // RLS devuelve null si el usuario no tiene fila en esa tabla.
+                const [{ data: aData }, { data: cData }] = await Promise.all([
+                    supabase.from('agentes').select('*').eq('usuario_id', user.id).maybeSingle(),
+                    supabase.from('contactos').select('*').eq('usuario_id', user.id).maybeSingle(),
+                ]);
+                if (cancelled) return;
+                setAgente(aData ?? null);
+                setContacto(cData ?? null);
+
+                if (u.rol === 'vendedor') {
                     const { data: v } = await supabase
                         .from('vendedores_cuenta')
                         .select('*')
@@ -61,8 +66,18 @@ export function useUsuario(): UsuarioCompleto {
         }
 
         fetch();
-        return () => { cancelled = true; };
+        return () => {
+            cancelled = true;
+        };
     }, [tick]);
 
-    return { usuario, agente, vendedorCuenta, loading, refetch: () => setTick((t) => t + 1) };
+    return {
+        usuario,
+        agente,
+        contacto,
+        vendedorCuenta,
+        tieneAmbosRoles: !!agente && !!contacto,
+        loading,
+        refetch: () => setTick((t) => t + 1),
+    };
 }

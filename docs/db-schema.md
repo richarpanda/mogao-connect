@@ -3,6 +3,7 @@
 **Este archivo es la fuente de verdad del esquema real.** Si necesitas una columna, tabla o relación que no está aquí, pregúntale a Ricardo — no la inventes ni asumas que existe. Cuando el esquema cambie de verdad (Ricardo corre una migración), este archivo se actualiza para reflejarlo — un esquema desactualizado aquí es peor que no tener el archivo.
 
 Última verificación contra la base de datos real: 2026-09-25 — columnas de `propiedades` confirmadas (vendedor_id → vendedores.id).
+Actualización 2026-09-25 — `agentes.radio_km`, `agentes.radio_lat`, `agentes.radio_lng` aplicados.
 
 ---
 
@@ -32,6 +33,9 @@ Trigger `on_auth_user_created` crea la fila automáticamente al registrarse via 
 | estatus_autorizacion | text | NO | `'pendiente'` |
 | motivo_rechazo | text | YES | |
 | origen | text | NO | `'app'` |
+| radio_km | numeric | NO | `10` |
+| radio_lat | numeric | YES | |
+| radio_lng | numeric | YES | |
 | created_at / updated_at | timestamptz | NO | `now()` |
 
 - `estatus_autorizacion`: `'pendiente'` | `'autorizado'` | `'rechazado'`

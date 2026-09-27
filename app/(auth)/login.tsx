@@ -6,7 +6,6 @@ import {
     TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
-    Alert,
     Image,
     ScrollView,
 } from 'react-native';
@@ -14,20 +13,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { AppAlert, useAppAlert } from '../../lib/components/app-alert';
 
 const LOGO = require('../../assets/logo-mogao-connect.png');
 
 export default function Login() {
     const router = useRouter();
+    const { show, alertProps } = useAppAlert();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [googleLoading, setGoogleLoading] = useState(false);
 
     async function handleLogin() {
         if (!email || !password) {
-            Alert.alert('Campos requeridos', 'Ingresa tu correo y contraseña.');
+            show({ type: 'warning', title: 'Campos requeridos', message: 'Ingresa tu correo y contraseña.' });
             return;
         }
         setLoading(true);
@@ -38,26 +38,23 @@ export default function Login() {
             });
             if (error) throw error;
         } catch (err: any) {
-            Alert.alert('Error al iniciar sesión', err.message ?? 'Inténtalo de nuevo.');
+            show({ type: 'error', title: 'Error al iniciar sesión', message: err.message ?? 'Inténtalo de nuevo.' });
         } finally {
             setLoading(false);
         }
     }
 
     async function handleGoogle() {
-        // Para activar: npx expo install expo-web-browser expo-auth-session
-        // y configurar Google provider en Supabase + Google Cloud Console.
-        // Ver docs/features/fase-1-google-oauth.md
-        Alert.alert(
-            'Google OAuth',
-            'Esta función está lista para activarse. Necesitas configurar las credenciales de Google en Supabase primero.',
-        );
+        show({
+            type: 'info',
+            title: 'Google OAuth',
+            message: 'Esta función está lista para activarse. Necesitas configurar las credenciales de Google en Supabase primero.',
+        });
     }
 
     return (
         <View className="flex-1 bg-mogao-teal">
             <SafeAreaView className="flex-1" edges={['top']}>
-                {/* Encabezado teal */}
                 <View className="items-center justify-center pt-8 pb-10 px-6">
                     <Image
                         source={LOGO}
@@ -68,12 +65,11 @@ export default function Login() {
                         style={{
                             height: 1, width: 40, backgroundColor: 'rgba(201,162,39,0.6)',
                             marginTop: 20,
-                            marginBottom: -10
+                            marginBottom: -10,
                         }}
                     />
                 </View>
 
-                {/* Card */}
                 <KeyboardAvoidingView
                     className="flex-1"
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -84,7 +80,6 @@ export default function Login() {
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
                     >
-                        {/* Heading */}
                         <Text
                             style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontWeight: '600', color: '#8A6C1B', marginBottom: 4, marginTop: 4 }}
                         >
@@ -97,7 +92,6 @@ export default function Login() {
                             Ingresa tus datos para continuar
                         </Text>
 
-                        {/* Form card */}
                         <View
                             className="bg-white rounded-2xl p-5 mb-5"
                             style={{
@@ -110,7 +104,6 @@ export default function Login() {
                                 elevation: 4,
                             }}
                         >
-                            {/* Email */}
                             <Text className="text-sm font-medium text-gray-700 mb-1.5">
                                 Correo electrónico
                             </Text>
@@ -129,7 +122,6 @@ export default function Login() {
                                 />
                             </View>
 
-                            {/* Password */}
                             <Text className="text-sm font-medium text-gray-700 mb-1.5">
                                 Contraseña
                             </Text>
@@ -154,7 +146,6 @@ export default function Login() {
                                 </TouchableOpacity>
                             </View>
 
-                            {/* Olvidé contraseña */}
                             <TouchableOpacity
                                 className="self-end mb-5"
                                 onPress={() => router.push('/(auth)/forgot-password' as any)}
@@ -164,9 +155,8 @@ export default function Login() {
                                 </Text>
                             </TouchableOpacity>
 
-                            {/* Botón entrar */}
                             <TouchableOpacity
-                                className={`flex-row items-center justify-center gap-2 rounded-xl py-3.5 ${loading ? 'bg-mogao-tealLight' : 'bg-mogao-teal'}`}
+                                className={`items-center justify-center rounded-xl py-3.5 ${loading ? 'bg-mogao-tealLight' : 'bg-mogao-teal'}`}
                                 onPress={handleLogin}
                                 disabled={loading}
                                 activeOpacity={0.85}
@@ -174,23 +164,19 @@ export default function Login() {
                                 <Text className="text-white font-semibold text-sm">
                                     {loading ? 'Entrando...' : 'Entrar'}
                                 </Text>
-                                {!loading && <Ionicons name="arrow-forward" size={15} color="white" />}
                             </TouchableOpacity>
                         </View>
 
-                        {/* Divisor */}
                         <View className="flex-row items-center gap-3 mb-5">
                             <View className="flex-1 bg-gray-200" style={{ height: 1 }} />
                             <Text className="text-xs text-gray-400">o continúa con</Text>
                             <View className="flex-1 bg-gray-200" style={{ height: 1 }} />
                         </View>
 
-                        {/* Google */}
                         <TouchableOpacity
                             className="flex-row items-center justify-center gap-2.5 bg-white border border-gray-200 rounded-xl py-3.5 mb-3"
                             style={{ elevation: 1, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } }}
                             onPress={handleGoogle}
-                            disabled={googleLoading}
                             activeOpacity={0.8}
                         >
                             <Ionicons name="logo-google" size={18} color="#EA4335" />
@@ -212,6 +198,7 @@ export default function Login() {
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+            <AppAlert {...alertProps} />
         </View>
     );
 }

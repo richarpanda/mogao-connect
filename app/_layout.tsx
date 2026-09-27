@@ -55,8 +55,11 @@ function RootNavigator() {
 
         if (session && inAuthGroup) {
             AsyncStorage.getItem('needsRoleSelect').then((flag) => {
-                if (!flag) router.replace('/(tabs)');
-                // Si flag existe, el usuario está en medio del registro → no redirigir
+                if (flag) {
+                    router.replace('/(auth)/role-select' as any);
+                } else {
+                    router.replace('/(tabs)');
+                }
             });
         }
     // segments intencionalmente fuera del dep array
@@ -68,7 +71,11 @@ function RootNavigator() {
         return <Animated.View style={{ flex: 1, backgroundColor: '#FAF7F0' }} />;
     }
 
-    return <Stack screenOptions={{ headerShown: false }} />;
+    return (
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(modals)" options={{ presentation: 'modal' }} />
+        </Stack>
+    );
 }
 
 export default function RootLayout() {

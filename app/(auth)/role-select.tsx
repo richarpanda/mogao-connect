@@ -15,8 +15,6 @@ import { AppAlert, useAppAlert } from '../../lib/components/app-alert';
 
 const LOGO = require('../../assets/logo-mogao-connect.png');
 
-const LOGO = require('../../assets/logo-mogao-connect.png');
-
 type Rol = 'cliente' | 'vendedor' | 'agente';
 
 type RolOption = {

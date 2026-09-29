@@ -33,6 +33,9 @@ export type Agente = {
     estatus_autorizacion: 'pendiente' | 'autorizado' | 'rechazado';
     motivo_rechazo: string | null;
     origen: 'app' | 'crm';
+    radio_km: number | null;
+    radio_lat: number | null;
+    radio_lng: number | null;
     created_at: string;
     updated_at: string;
 };

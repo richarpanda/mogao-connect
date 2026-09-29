@@ -182,7 +182,7 @@ Funciones helper usadas en las políticas: `current_rol()`, `current_agente_id()
 - `vendedores_cuenta`: admin todo; el propio vendedor puede leer/insertar su fila (`usuario_id = auth.uid()`)
 - `kyc_documentos`: admin todo; el propio usuario puede leer/escribir sus docs (`usuario_id = auth.uid()`)
 - `contactos`: admin todo; agente dueño del contacto todo; el propio cliente puede leer su fila (`usuario_id = auth.uid()`)
-- `citas`: admin todo; el agente asignado todo (`agente_id = current_agente_id()`); el contacto puede leer las suyas
+- `citas`: admin todo; el agente asignado todo (`agente_id = current_agente_id()`); el contacto puede leer las suyas; agentes autenticados pueden leer solicitudes abiertas (`agente_id IS NULL`) — policy `agentes_select_citas_abiertas` aplicada 2026-09-29 (Fase 4)
 - `procesos_compra` / `proceso_historial` / `proceso_documentos`: admin todo, agente dueño todo, contacto solo lectura de lo suyo
 - `propiedades`: admin todo; agente autenticado puede leer todas; `cliente` y `vendedor` pueden leer todas las propiedades con `estatus = 'disponible'` (policy `cliente_vendedor_read_disponibles`, aplicada 2026-09-20)
 - `propiedad_fotos` / `propiedad_documentos`: admin todo; agente/cliente/vendedor autenticados pueden leer; fotos con lectura pública para `anon` — ⚠️ verificar que la política incluya `vendedor`, de lo contrario el join devuelve fotos vacías para ese rol
@@ -195,6 +195,7 @@ Funciones helper usadas en las políticas: `current_rol()`, `current_agente_id()
 ## Funciones RPC existentes
 
 - **`set_initial_rol(p_rol text)`** — SECURITY DEFINER. Actualiza `usuarios.rol` para el usuario autenticado. Solo permite valores `cliente`, `agente`, `vendedor` (bloquea `admin`). Usado por `role-select.tsx` al completar el registro.
+- **`tomar_cita(p_cita_id uuid)`** — SECURITY DEFINER. Claim atómico de una cita abierta para el asesor autenticado. Verifica `estatus_autorizacion = 'autorizado'` en DB. Hace `UPDATE citas SET agente_id = ... WHERE agente_id IS NULL` en una sola sentencia (sin condición de carrera). Si otra transacción ya tomó la cita, retorna `{ success: false, error: "ya_tomada" }`. También asigna `contactos.agente_id` al asesor si el contacto aún no tiene asesor. Aplicado 2026-09-29 (Fase 4).
 
 ---
 

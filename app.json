@@ -16,6 +16,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.mogao.app",
       "adaptiveIcon": {
         "backgroundColor": "#0E3B36",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -31,6 +32,12 @@
       "expo-router",
       "expo-status-bar",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3af4a2ae-9a95-422a-b087-ec39928d3fcc"
+      }
+    }
   }
 }

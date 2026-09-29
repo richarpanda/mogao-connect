@@ -4,6 +4,7 @@
 
 Última verificación contra la base de datos real: 2026-09-25 — columnas de `propiedades` confirmadas (vendedor_id → vendedores.id).
 Actualización 2026-09-25 — `agentes.radio_km`, `agentes.radio_lat`, `agentes.radio_lng` aplicados.
+Actualización 2026-09-26 — `UNIQUE (usuario_id)` en `vendedores_cuenta` aplicado. Políticas RLS UPDATE para `usuarios` (`id = auth.uid()`) y `agentes` (`usuario_id = auth.uid()`) aplicadas.
 
 ---
 

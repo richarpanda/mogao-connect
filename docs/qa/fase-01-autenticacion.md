@@ -5,7 +5,7 @@
 
 **Leyenda:** ✅ Pasa · ❌ Falla · ⚠️ Parcial · ➖ No aplica / pendiente
 
-**Última revisión:** 2026-09-25
+**Última revisión:** 2026-09-26
 **Revisado por:** Ricardo
 **Estado general:** ⚠️ Parcial — funcionalidad completa, pendiente de pruebas en Bloques 3.8, 5, 6 y 7
 
@@ -17,6 +17,8 @@
 |---|---|---|
 | B1 | Función RPC `set_initial_rol` creada en Supabase | ✅ Aplicado |
 | B2 | Migración `agentes.radio_km / radio_lat / radio_lng` | ✅ Aplicado 2026-09-25 |
+| B3 | `UNIQUE` constraint en `vendedores_cuenta.usuario_id` | ✅ Aplicado 2026-09-26 |
+| B4 | Políticas RLS UPDATE en `usuarios` y `agentes` | ✅ Aplicado 2026-09-26 |
 
 ---
 
@@ -161,8 +163,8 @@
 
 | # | Bloque | Descripción | Severidad | Estado |
 |---|---|---|---|---|
-| B3 | 2 | Registro como vendedor falla con error 42P10 — falta `UNIQUE` constraint en `vendedores_cuenta.usuario_id`. SQL: `ALTER TABLE vendedores_cuenta ADD CONSTRAINT vendedores_cuenta_usuario_id_key UNIQUE (usuario_id);` | 🔴 Crítico | Pendiente DB |
-| B4 | 6, 8 | Cambios en perfil y radio no persisten — políticas RLS de `usuarios` y `agentes` no tienen UPDATE. SQL en docs del sprint. | 🔴 Crítico | Pendiente DB |
+| B3 | 2 | Registro como vendedor falla con error 42P10 — falta `UNIQUE` constraint en `vendedores_cuenta.usuario_id` | 🔴 Crítico | ✅ Resuelto 2026-09-26 |
+| B4 | 6, 8 | Cambios en perfil y radio no persisten — políticas RLS de `usuarios` y `agentes` sin UPDATE | 🔴 Crítico | ✅ Resuelto 2026-09-26 |
 
 > Severidad: 🔴 Crítico (bloquea flujo) · 🟡 Medio (afecta UX) · 🟢 Menor (cosmético)
 
@@ -171,4 +173,4 @@
 ## Notas generales
 
 - Caso 4.4 (asesor autorizado) requiere cuenta creada desde el CRM — marcar ➖ hasta tener ese dato de prueba
-- Bloques 5, 6, 7 y 8 requieren correr los dos SQL de RLS antes de probar (ver bugs B3 y B4 abajo)
+- Sin bloqueadores de DB pendientes — todos los SQL están aplicados

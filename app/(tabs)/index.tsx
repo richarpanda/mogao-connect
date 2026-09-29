@@ -5,15 +5,17 @@ import {
     FlatList,
     TextInput,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     RefreshControl,
-    Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { usePropiedades, PropiedadConFotos } from '../../lib/hooks/use-propiedades';
-import { formatPrecio } from '../../lib/utils/format';
+import { Ionicons } from '@expo/vector-icons';
+import { usePropiedades } from '../../lib/hooks/use-propiedades';
+import { useTiposPropiedad } from '../../lib/hooks/use-tipos-propiedad';
+import { PropiedadCard } from '../../lib/components/propiedad-card';
+import { CatalogoMapa } from '../../lib/components/catalogo-mapa';
+import { FiltrosModal, FiltrosExtra } from '../../lib/components/filtros-modal';
 
 const RECAMARA_CHIPS = [
     { label: 'Todos', value: undefined },
@@ -23,15 +25,38 @@ const RECAMARA_CHIPS = [
     { label: '4+', value: 4 },
 ];
 
-const CARD_WIDTH = Dimensions.get('window').width - 32;
+const FILTROS_VACIOS: FiltrosExtra = {
+    banos: undefined,
+    tipoId: undefined,
+    precioMin: undefined,
+    precioMax: undefined,
+};
 
 export default function Catalogo() {
     const router = useRouter();
+    const [vista, setVista] = useState<'lista' | 'mapa'>('lista');
     const [busqueda, setBusqueda] = useState('');
     const [ciudad, setCiudad] = useState<string | undefined>();
     const [recamaras, setRecamaras] = useState<number | undefined>();
+    const [filtrosExtra, setFiltrosExtra] = useState<FiltrosExtra>(FILTROS_VACIOS);
+    const [filtrosVisible, setFiltrosVisible] = useState(false);
 
-    const { propiedades, loading, error, refetch } = usePropiedades(ciudad, recamaras);
+    const { propiedades, loading, error, refetch } = usePropiedades(
+        ciudad,
+        recamaras,
+        filtrosExtra.tipoId,
+        filtrosExtra.precioMin,
+        filtrosExtra.precioMax,
+        filtrosExtra.banos,
+    );
+    const { tipos } = useTiposPropiedad();
+
+    const filtrosActivosCount = [
+        filtrosExtra.banos,
+        filtrosExtra.tipoId,
+        filtrosExtra.precioMin,
+        filtrosExtra.precioMax,
+    ].filter((v) => v != null).length;
 
     function handleBuscar() {
         setCiudad(busqueda.trim() || undefined);
@@ -43,10 +68,10 @@ export default function Catalogo() {
             <View className="px-4 pt-4 pb-2">
                 <Text className="text-2xl font-bold text-gray-900 mb-3">Propiedades</Text>
 
-                {/* Búsqueda por ciudad */}
+                {/* Búsqueda + botón de filtros */}
                 <View className="flex-row gap-2 mb-3">
                     <TextInput
-                        className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900"
+                        className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-base text-gray-900 bg-white"
                         placeholder="Buscar por ciudad..."
                         value={busqueda}
                         onChangeText={setBusqueda}
@@ -59,9 +84,24 @@ export default function Catalogo() {
                     >
                         <Text className="text-white font-semibold">Buscar</Text>
                     </TouchableOpacity>
+                    {/* Filtros extra */}
+                    <TouchableOpacity
+                        onPress={() => setFiltrosVisible(true)}
+                        className={`rounded-xl w-12 items-center justify-center border ${
+                            filtrosActivosCount > 0
+                                ? 'bg-mogao-gold border-mogao-gold'
+                                : 'bg-white border-gray-300'
+                        }`}
+                    >
+                        {filtrosActivosCount > 0 ? (
+                            <Text className="text-white text-xs font-bold">{filtrosActivosCount}</Text>
+                        ) : (
+                            <Ionicons name="options-outline" size={20} color="#374151" />
+                        )}
+                    </TouchableOpacity>
                 </View>
 
-                {/* Filtro recámaras */}
+                {/* Chips de recámaras */}
                 <FlatList
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -91,7 +131,7 @@ export default function Catalogo() {
                 />
             </View>
 
-            {/* Lista */}
+            {/* Cuerpo: lista o mapa */}
             {error ? (
                 <View className="flex-1 items-center justify-center px-6">
                     <Text className="text-red-500 text-center mb-4">{error}</Text>
@@ -99,17 +139,25 @@ export default function Catalogo() {
                         <Text className="text-white font-semibold">Reintentar</Text>
                     </TouchableOpacity>
                 </View>
-            ) : (
+            ) : vista === 'lista' ? (
                 <FlatList
                     data={propiedades}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+                    contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
                     ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
                     refreshControl={
-                        <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#0E3B36" />
+                        <RefreshControl
+                            refreshing={loading}
+                            onRefresh={refetch}
+                            tintColor="#0E3B36"
+                        />
                     }
                     ListEmptyComponent={
-                        loading ? null : (
+                        loading ? (
+                            <View className="py-20 items-center">
+                                <ActivityIndicator size="large" color="#0E3B36" />
+                            </View>
+                        ) : (
                             <View className="items-center py-20">
                                 <Text className="text-gray-400 text-base">
                                     No hay propiedades disponibles
@@ -124,79 +172,34 @@ export default function Catalogo() {
                         />
                     )}
                 />
-            )}
-        </SafeAreaView>
-    );
-}
-
-function PropiedadCard({
-    propiedad,
-    onPress,
-}: {
-    propiedad: PropiedadConFotos;
-    onPress: () => void;
-}) {
-    const foto = propiedad.propiedad_fotos[0];
-    const c = propiedad.caracteristicas;
-
-    return (
-        <TouchableOpacity
-            onPress={onPress}
-            className="bg-white rounded-2xl overflow-hidden border border-gray-100"
-            style={{ shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 }}
-        >
-            {/* Foto */}
-            {foto ? (
-                <Image
-                    source={{ uri: foto.url }}
-                    style={{ width: CARD_WIDTH, height: 200 }}
-                    resizeMode="cover"
-                />
             ) : (
-                <View
-                    style={{ width: CARD_WIDTH, height: 200 }}
-                    className="bg-gray-100 items-center justify-center"
-                >
-                    <Text className="text-gray-400 text-4xl">🏠</Text>
-                </View>
+                <CatalogoMapa propiedades={propiedades} />
             )}
 
-            {/* Info */}
-            <View className="p-4">
-                <Text className="text-xl font-bold text-mogao-gold mb-1">
-                    {formatPrecio(propiedad.precio)}
+            {/* Toggle mapa / lista (botón flotante) */}
+            <TouchableOpacity
+                onPress={() => setVista((v) => (v === 'lista' ? 'mapa' : 'lista'))}
+                className="absolute bottom-6 self-center bg-mogao-teal rounded-full px-5 py-3 flex-row items-center gap-2"
+                style={{ shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 }}
+            >
+                <Ionicons
+                    name={vista === 'lista' ? 'map-outline' : 'list-outline'}
+                    size={18}
+                    color="#fff"
+                />
+                <Text className="text-white font-semibold text-sm">
+                    {vista === 'lista' ? 'Ver mapa' : 'Ver lista'}
                 </Text>
-                <Text className="text-base font-semibold text-gray-900 mb-1" numberOfLines={1}>
-                    {propiedad.titulo}
-                </Text>
-                {propiedad.ciudad && (
-                    <Text className="text-sm text-gray-500 mb-3" numberOfLines={1}>
-                        📍 {propiedad.ciudad}
-                        {propiedad.direccion ? ` · ${propiedad.direccion}` : ''}
-                    </Text>
-                )}
+            </TouchableOpacity>
 
-                {/* Características */}
-                <View className="flex-row gap-3">
-                    {c?.recamaras != null && (
-                        <Text className="text-sm text-gray-600">🛏 {c.recamaras} rec</Text>
-                    )}
-                    {c?.banos != null && (
-                        <Text className="text-sm text-gray-600">🚿 {c.banos} baños</Text>
-                    )}
-                    {c?.m2 != null && (
-                        <Text className="text-sm text-gray-600">📐 {c.m2} m²</Text>
-                    )}
-                </View>
-
-                {propiedad.tipos_propiedad && (
-                    <View className="mt-2">
-                        <Text className="text-xs text-gray-400">
-                            {propiedad.tipos_propiedad.nombre}
-                        </Text>
-                    </View>
-                )}
-            </View>
-        </TouchableOpacity>
+            {/* Modal de filtros */}
+            <FiltrosModal
+                visible={filtrosVisible}
+                filtros={filtrosExtra}
+                tipos={tipos}
+                onAplicar={setFiltrosExtra}
+                onCerrar={() => setFiltrosVisible(false)}
+            />
+        </SafeAreaView>
     );
 }

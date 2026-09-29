@@ -13,6 +13,7 @@ export function usePropiedades(
     tipo_id?: string,
     precio_min?: number,
     precio_max?: number,
+    banos?: number,
 ) {
     const [propiedades, setPropiedades] = useState<PropiedadConFotos[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,7 +28,7 @@ export function usePropiedades(
                 .select('*, propiedad_fotos(url, orden), tipos_propiedad(nombre)')
                 .eq('estatus', 'disponible')
                 .order('created_at', { ascending: false })
-                .limit(30);
+                .limit(100);
 
             if (ciudad) query = query.ilike('ciudad', `%${ciudad}%`);
             if (tipo_id) query = query.eq('tipo_id', tipo_id);
@@ -42,10 +43,15 @@ export function usePropiedades(
                 propiedad_fotos: [...p.propiedad_fotos].sort((a, b) => a.orden - b.orden),
             })) as PropiedadConFotos[];
 
-            // recamaras is in the caracteristicas jsonb — filter client-side
+            // recamaras y banos están en el jsonb — se filtran en cliente
             if (recamaras) {
                 result = result.filter(
                     (p) => ((p.caracteristicas as CaracteristicasPropiedad)?.recamaras ?? 0) >= recamaras,
+                );
+            }
+            if (banos) {
+                result = result.filter(
+                    (p) => ((p.caracteristicas as CaracteristicasPropiedad)?.banos ?? 0) >= banos,
                 );
             }
 
@@ -56,7 +62,7 @@ export function usePropiedades(
         } finally {
             setLoading(false);
         }
-    }, [ciudad, recamaras, tipo_id, precio_min, precio_max]);
+    }, [ciudad, recamaras, tipo_id, precio_min, precio_max, banos]);
 
     useEffect(() => {
         fetch();

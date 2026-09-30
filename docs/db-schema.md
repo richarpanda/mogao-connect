@@ -5,6 +5,7 @@
 Última verificación contra la base de datos real: 2026-09-25 — columnas de `propiedades` confirmadas (vendedor_id → vendedores.id).
 Actualización 2026-09-25 — `agentes.radio_km`, `agentes.radio_lat`, `agentes.radio_lng` aplicados.
 Actualización 2026-09-26 — `UNIQUE (usuario_id)` en `vendedores_cuenta` aplicado. Políticas RLS UPDATE para `usuarios` (`id = auth.uid()`) y `agentes` (`usuario_id = auth.uid()`) aplicadas.
+Actualización 2026-09-29 — Fase 5 pendiente de aplicar: `propiedades.vendedor_cuenta_id`, tabla `requerimientos` y RLS asociados (`fase-5-schema.sql`).
 
 ---
 
@@ -115,6 +116,7 @@ Vendedores/propietarios con cuenta propia en la App. Mismo patrón que `agentes`
 | tipo_id | uuid → `tipos_propiedad.id` | YES | |
 | latitud / longitud | numeric | YES | |
 | vendedor_id | uuid → `vendedores.id` | YES | |
+| vendedor_cuenta_id | uuid → `vendedores_cuenta.id` | YES | ⚠️ pendiente (`fase-5-schema.sql`) |
 | created_at / updated_at | timestamptz | NO | `now()` |
 
 ### `tipos_propiedad`
@@ -162,6 +164,20 @@ Vendedores/propietarios con cuenta propia en la App. Mismo patrón que `agentes`
 
 `agente_id` nullable desde 2026-09-18. Las citas nacen sin asesor; el asesor las toma en Fase 4 (UPDATE atómico con `WHERE agente_id IS NULL`).
 
+### `requerimientos` ⚠️ Pendiente de aplicar (`fase-5-schema.sql`)
+| Columna | Tipo | Nullable | Default |
+|---|---|---|---|
+| id | uuid | NO | `gen_random_uuid()` |
+| asesor_id | uuid → `agentes.id` | NO | |
+| tipo_operacion | text (`compra`\|`renta`) | NO | |
+| tipo_propiedad_id | uuid → `tipos_propiedad.id` | YES | |
+| precio_min | numeric | YES | |
+| precio_max | numeric | YES | |
+| zona | text | YES | |
+| notas | text | YES | |
+| activo | boolean | NO | `true` |
+| created_at / updated_at | timestamptz | NO | `now()` |
+
 ---
 
 ## Enums (valores reales confirmados — no agregar ni quitar sin confirmar)
@@ -182,7 +198,8 @@ Funciones helper usadas en las políticas: `current_rol()`, `current_agente_id()
 - `vendedores_cuenta`: admin todo; el propio vendedor puede leer/insertar su fila (`usuario_id = auth.uid()`)
 - `kyc_documentos`: admin todo; el propio usuario puede leer/escribir sus docs (`usuario_id = auth.uid()`)
 - `contactos`: admin todo; agente dueño del contacto todo; el propio cliente puede leer su fila (`usuario_id = auth.uid()`)
-- `citas`: admin todo; el agente asignado todo (`agente_id = current_agente_id()`); el contacto puede leer las suyas; agentes autenticados pueden leer solicitudes abiertas (`agente_id IS NULL`) — policy `agentes_select_citas_abiertas` aplicada 2026-09-29 (Fase 4)
+- `citas`: admin todo; el agente asignado todo (`agente_id = current_agente_id()`); el contacto puede leer las suyas; agentes autenticados pueden leer solicitudes abiertas (`agente_id IS NULL`) — policy `agentes_select_citas_abiertas` aplicada 2026-09-29 (Fase 4); vendedor_cuenta puede leer citas de sus propiedades para conteo de visitas — policy `vendedor_cuenta_select_citas_propiedad` pendiente (Fase 5)
+- `requerimientos` ⚠️ pendiente: todo autenticado puede leer activos; solo el asesor dueño puede crear/editar/desactivar (Fase 5)
 - `procesos_compra` / `proceso_historial` / `proceso_documentos`: admin todo, agente dueño todo, contacto solo lectura de lo suyo
 - `propiedades`: admin todo; agente autenticado puede leer todas; `cliente` y `vendedor` pueden leer todas las propiedades con `estatus = 'disponible'` (policy `cliente_vendedor_read_disponibles`, aplicada 2026-09-20)
 - `propiedad_fotos` / `propiedad_documentos`: admin todo; agente/cliente/vendedor autenticados pueden leer; fotos con lectura pública para `anon` — ⚠️ verificar que la política incluya `vendedor`, de lo contrario el join devuelve fotos vacías para ese rol

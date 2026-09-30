@@ -1,5 +1,5 @@
 export type RolUsuario = 'admin' | 'agente' | 'cliente' | 'vendedor';
-export type EstatusPropiedad = 'disponible' | 'apartada' | 'en_proceso' | 'vendida' | 'pendiente_verificacion';
+export type EstatusPropiedad = 'disponible' | 'apartada' | 'en_proceso' | 'vendida' | 'pendiente_verificacion' | 'rechazada';
 export type EstatusProceso =
     | 'interesado'
     | 'apartado'
@@ -76,6 +76,8 @@ export type Propiedad = {
     latitud: number | null;
     longitud: number | null;
     vendedor_id: string | null;
+    vendedor_cuenta_id: string | null;
+    motivo_rechazo: string | null;
     created_at: string;
     updated_at: string;
 };
@@ -162,4 +164,28 @@ export type ProcesoConDetalle = ProcesoCompra & {
     propiedades: Pick<Propiedad, 'id' | 'titulo' | 'direccion' | 'ciudad'>;
     proceso_historial: ProcesoHistorial[];
     proceso_documentos: ProcesoDocumento[];
+};
+
+export type PropiedadDocumento = {
+    id: string;
+    propiedad_id: string;
+    tipo: string;
+    url: string;
+    created_at: string;
+};
+
+export type TipoOperacion = 'compra' | 'renta';
+
+export type Requerimiento = {
+    id: string;
+    asesor_id: string;
+    tipo_operacion: TipoOperacion;
+    tipo_propiedad_id: string | null;
+    precio_min: number | null;
+    precio_max: number | null;
+    zona: string | null;
+    notas: string | null;
+    activo: boolean;
+    created_at: string;
+    updated_at: string;
 };

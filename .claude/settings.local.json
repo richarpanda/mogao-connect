@@ -8,7 +8,9 @@
       "Bash(git commit -m ' *)",
       "Bash(npx expo *)",
       "Bash(git checkout *)",
-      "Bash(xargs wc *)"
+      "Bash(xargs wc *)",
+      "Bash(npx tsc *)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

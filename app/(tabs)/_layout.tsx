@@ -5,6 +5,10 @@ import { useAuth } from '../../lib/context/auth-context';
 export default function TabsLayout() {
     const { modoActivo } = useAuth();
     const esAsesor = modoActivo === 'asesor';
+    const esVendedor = modoActivo === 'vendedor';
+
+    const tabCentralLabel = esAsesor ? 'Solicitudes' : esVendedor ? 'Propiedades' : 'Mis procesos';
+    const tabCentralIcon = esAsesor ? 'calendar-outline' : esVendedor ? 'home-outline' : 'document-text-outline';
 
     return (
         <Tabs
@@ -20,20 +24,26 @@ export default function TabsLayout() {
                 options={{
                     title: 'Catálogo',
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="home-outline" size={size} color={color} />
+                        <Ionicons name="search-outline" size={size} color={color} />
                     ),
                 }}
             />
             <Tabs.Screen
                 name="solicitudes"
                 options={{
-                    title: esAsesor ? 'Solicitudes' : 'Mis procesos',
+                    title: tabCentralLabel,
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons
-                            name={esAsesor ? 'calendar-outline' : 'document-text-outline'}
-                            size={size}
-                            color={color}
-                        />
+                        <Ionicons name={tabCentralIcon as any} size={size} color={color} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="requerimientos"
+                options={{
+                    title: 'Requerimientos',
+                    href: esAsesor ? undefined : null,
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="list-outline" size={size} color={color} />
                     ),
                 }}
             />

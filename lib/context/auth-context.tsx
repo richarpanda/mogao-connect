@@ -3,7 +3,7 @@ import { Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../supabase';
 
-export type Modo = 'asesor' | 'comprador';
+export type Modo = 'asesor' | 'comprador' | 'vendedor';
 
 type AuthContextValue = {
     session: Session | null;
@@ -24,7 +24,9 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 function rolToModo(rol: string | null): Modo {
-    return rol === 'agente' ? 'asesor' : 'comprador';
+    if (rol === 'agente') return 'asesor';
+    if (rol === 'vendedor') return 'vendedor';
+    return 'comprador';
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

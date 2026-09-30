@@ -8,6 +8,7 @@ type UsuarioCompleto = {
     contacto: Contacto | null;
     vendedorCuenta: VendedorCuenta | null;
     tieneAmbosRoles: boolean;
+    modosDisponibles: import('../context/auth-context').Modo[];
     loading: boolean;
     refetch: () => void;
 };
@@ -71,12 +72,18 @@ export function useUsuario(): UsuarioCompleto {
         };
     }, [tick]);
 
+    const modosDisponibles: import('../context/auth-context').Modo[] = [];
+    if (agente) modosDisponibles.push('asesor');
+    if (vendedorCuenta) modosDisponibles.push('vendedor');
+    if (contacto) modosDisponibles.push('comprador');
+
     return {
         usuario,
         agente,
         contacto,
         vendedorCuenta,
-        tieneAmbosRoles: !!agente && !!contacto,
+        tieneAmbosRoles: modosDisponibles.length > 1,
+        modosDisponibles,
         loading,
         refetch: () => setTick((t) => t + 1),
     };

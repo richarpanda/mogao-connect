@@ -18,12 +18,14 @@ import {
     SolicitudAbierta,
     CitaAsesor,
 } from '../../lib/hooks/use-bandeja-asesor';
+import { useMisPropiedades, PropiedadVendedor } from '../../lib/hooks/use-mis-propiedades';
 import { useAuth } from '../../lib/context/auth-context';
-import { formatFechaHora } from '../../lib/utils/format';
+import { formatFechaHora, formatPrecio } from '../../lib/utils/format';
 
 export default function Solicitudes() {
     const { modoActivo } = useAuth();
     if (modoActivo === 'asesor') return <BandejaAsesorView />;
+    if (modoActivo === 'vendedor') return <VendedorView />;
     return <CompradorView />;
 }
 
@@ -259,6 +261,144 @@ function MiCitaCard({ cita }: { cita: CitaAsesor }) {
                 >
                     <Text className="text-sm font-semibold text-mogao-teal">Ver proceso</Text>
                 </TouchableOpacity>
+            )}
+        </View>
+    );
+}
+
+// ─── Vista del vendedor ──────────────────────────────────────────────────────
+
+const ESTATUS_PROPIEDAD_COLOR: Record<string, string> = {
+    pendiente_verificacion: 'bg-yellow-100 text-yellow-700',
+    disponible: 'bg-green-100 text-green-700',
+    apartada: 'bg-blue-100 text-blue-700',
+    en_proceso: 'bg-purple-100 text-purple-700',
+    vendida: 'bg-gray-100 text-gray-500',
+    rechazada: 'bg-red-100 text-red-700',
+};
+
+const ESTATUS_PROPIEDAD_LABEL: Record<string, string> = {
+    pendiente_verificacion: 'Pendiente de verificación',
+    disponible: 'Disponible',
+    apartada: 'Apartada',
+    en_proceso: 'En proceso',
+    vendida: 'Vendida',
+    rechazada: 'Rechazada',
+};
+
+function VendedorView() {
+    const router = useRouter();
+    const { vendedorCuenta, propiedades, loading, refetch } = useMisPropiedades();
+
+    const estaAutorizado = vendedorCuenta?.estatus_autorizacion === 'autorizado';
+
+    return (
+        <SafeAreaView className="flex-1 bg-mogao-cream" edges={['top']}>
+            <View className="px-5 pt-4 pb-3 flex-row items-center justify-between">
+                <Text className="text-2xl font-bold text-gray-900">Mis propiedades</Text>
+                {estaAutorizado && (
+                    <TouchableOpacity
+                        onPress={() => router.push('/alta-propiedad' as any)}
+                        className="bg-mogao-teal px-4 py-2 rounded-xl flex-row items-center gap-1.5"
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="add" size={18} color="#fff" />
+                        <Text className="text-white text-sm font-semibold">Publicar</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {vendedorCuenta && !estaAutorizado && (
+                <View className="mx-5 mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex-row gap-3">
+                    <Ionicons name="lock-closed" size={20} color="#B45309" style={{ marginTop: 1 }} />
+                    <View className="flex-1">
+                        <Text className="text-sm font-semibold text-amber-800">Cuenta pendiente</Text>
+                        <Text className="text-xs text-amber-700 mt-1">
+                            Podrás publicar propiedades una vez que tu cuenta sea verificada por Mogao.
+                        </Text>
+                    </View>
+                </View>
+            )}
+
+            {loading ? (
+                <View className="flex-1 items-center justify-center">
+                    <ActivityIndicator size="large" color="#0E3B36" />
+                </View>
+            ) : (
+                <FlatList
+                    data={propiedades}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+                    ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+                    refreshControl={
+                        <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#0E3B36" />
+                    }
+                    ListEmptyComponent={
+                        <View className="items-center py-20 px-6">
+                            <Ionicons name="home-outline" size={48} color="#D1D5DB" />
+                            <Text className="text-gray-400 text-base text-center mt-4">
+                                {estaAutorizado
+                                    ? 'Aún no tienes propiedades publicadas'
+                                    : 'Tus propiedades aparecerán aquí cuando tu cuenta sea verificada'}
+                            </Text>
+                            {estaAutorizado && (
+                                <TouchableOpacity
+                                    onPress={() => router.push('/alta-propiedad' as any)}
+                                    className="mt-5 bg-mogao-teal px-6 py-3 rounded-xl"
+                                >
+                                    <Text className="text-white font-semibold">Publicar primera propiedad</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    }
+                    renderItem={({ item }) => <PropiedadVendedorCard propiedad={item} />}
+                />
+            )}
+        </SafeAreaView>
+    );
+}
+
+function PropiedadVendedorCard({ propiedad }: { propiedad: PropiedadVendedor }) {
+    const colorClass =
+        ESTATUS_PROPIEDAD_COLOR[propiedad.estatus] ?? 'bg-gray-100 text-gray-500';
+    const [bg, fg] = colorClass.split(' ');
+
+    return (
+        <View
+            className="bg-white border border-gray-100 rounded-2xl p-4"
+            style={{ shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 }}
+        >
+            <View className="flex-row items-start justify-between mb-1">
+                <Text className="text-base font-semibold text-gray-900 flex-1 mr-2" numberOfLines={1}>
+                    {propiedad.titulo}
+                </Text>
+                <View className={`px-2.5 py-1 rounded-full ${bg}`}>
+                    <Text className={`text-xs font-medium ${fg}`}>
+                        {ESTATUS_PROPIEDAD_LABEL[propiedad.estatus] ?? propiedad.estatus}
+                    </Text>
+                </View>
+            </View>
+
+            {propiedad.ciudad && (
+                <Text className="text-sm text-gray-500 mb-1">📍 {propiedad.ciudad}</Text>
+            )}
+            <Text className="text-sm font-semibold text-mogao-teal mb-3">
+                {formatPrecio(propiedad.precio)}
+            </Text>
+
+            <View className="flex-row items-center gap-1">
+                <Ionicons name="eye-outline" size={14} color="#6B7280" />
+                <Text className="text-xs text-gray-500">
+                    {propiedad.visitas_count}{' '}
+                    {propiedad.visitas_count === 1 ? 'visita solicitada' : 'visitas solicitadas'}
+                </Text>
+            </View>
+
+            {propiedad.estatus === 'rechazada' && propiedad.motivo_rechazo && (
+                <View className="mt-3 bg-red-50 border border-red-100 rounded-xl p-3 flex-row gap-2">
+                    <Ionicons name="alert-circle-outline" size={14} color="#DC2626" style={{ marginTop: 1 }} />
+                    <Text className="text-xs text-red-700 flex-1">{propiedad.motivo_rechazo}</Text>
+                </View>
             )}
         </View>
     );

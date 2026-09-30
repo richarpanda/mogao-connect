@@ -31,7 +31,14 @@
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mogao necesita acceso a tu galería para agregar fotos de la propiedad.",
+          "cameraPermission": "Mogao necesita acceso a tu cámara para tomar fotos de la propiedad."
+        }
+      ]
     ],
     "extra": {
       "router": {},

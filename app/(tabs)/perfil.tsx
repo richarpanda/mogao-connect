@@ -1,10 +1,11 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useUsuario } from '../../lib/hooks/use-usuario';
-import { useAuth, type Modo } from '../../lib/context/auth-context';
+import { useAuth } from '../../lib/context/auth-context';
+import type { Modo } from '../../lib/context/auth-context';
 import { AppAlert, useAppAlert } from '../../lib/components/app-alert';
 
 const ROL_LABEL: Record<string, string> = {
@@ -23,7 +24,7 @@ const ESTATUS_LABEL: Record<string, string> = {
 export default function Perfil() {
     const router = useRouter();
     const { modoActivo, setModoActivo } = useAuth();
-    const { usuario, agente, vendedorCuenta, tieneAmbosRoles, loading } = useUsuario();
+    const { usuario, agente, vendedorCuenta, tieneAmbosRoles, modosDisponibles, loading } = useUsuario();
     const { show, alertProps } = useAppAlert();
 
     const rolExt = agente ?? vendedorCuenta ?? null;
@@ -40,10 +41,6 @@ export default function Perfil() {
         });
     }
 
-    function toggleModo() {
-        const nuevo: Modo = modoActivo === 'asesor' ? 'comprador' : 'asesor';
-        setModoActivo(nuevo);
-    }
 
     if (loading) {
         return (
@@ -121,10 +118,10 @@ export default function Perfil() {
                     )}
                 </View>
 
-                {/* Toggle modo asesor / comprador */}
+                {/* Selector de modo (visible solo si el usuario tiene más de un rol) */}
                 {tieneAmbosRoles && (
                     <View
-                        className="bg-white rounded-2xl p-4 mb-4 flex-row items-center justify-between"
+                        className="bg-white rounded-2xl p-4 mb-4"
                         style={{
                             shadowColor: '#0E3B36',
                             shadowOpacity: 0.06,
@@ -132,29 +129,19 @@ export default function Perfil() {
                             elevation: 2,
                         }}
                     >
-                        <View className="flex-row items-center gap-3">
-                            <View className="w-9 h-9 rounded-full bg-mogao-cream items-center justify-center">
-                                <Ionicons
-                                    name={modoActivo === 'asesor' ? 'briefcase-outline' : 'home-outline'}
-                                    size={18}
-                                    color="#0E3B36"
+                        <Text className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
+                            Modo activo
+                        </Text>
+                        <View className="flex-row gap-2">
+                            {modosDisponibles.map((modo) => (
+                                <ModoButton
+                                    key={modo}
+                                    modo={modo}
+                                    activo={modoActivo === modo}
+                                    onPress={() => setModoActivo(modo)}
                                 />
-                            </View>
-                            <View>
-                                <Text className="text-sm font-semibold text-gray-900">
-                                    Modo {modoActivo === 'asesor' ? 'Asesor' : 'Comprador'}
-                                </Text>
-                                <Text className="text-xs text-gray-500">
-                                    Toca para cambiar de vista
-                                </Text>
-                            </View>
+                            ))}
                         </View>
-                        <Switch
-                            value={modoActivo === 'asesor'}
-                            onValueChange={toggleModo}
-                            trackColor={{ false: '#D1D5DB', true: '#155A52' }}
-                            thumbColor={modoActivo === 'asesor' ? '#C9A227' : '#F3F4F6'}
-                        />
                     </View>
                 )}
 
@@ -255,5 +242,46 @@ export default function Perfil() {
             </ScrollView>
             <AppAlert {...alertProps} />
         </SafeAreaView>
+    );
+}
+
+const MODO_CONFIG: Record<
+    import('../../lib/context/auth-context').Modo,
+    { label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }
+> = {
+    asesor: { label: 'Asesor', icon: 'briefcase-outline' },
+    vendedor: { label: 'Vendedor', icon: 'home-outline' },
+    comprador: { label: 'Comprador', icon: 'person-outline' },
+};
+
+function ModoButton({
+    modo,
+    activo,
+    onPress,
+}: {
+    modo: import('../../lib/context/auth-context').Modo;
+    activo: boolean;
+    onPress: () => void;
+}) {
+    const config = MODO_CONFIG[modo];
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.8}
+            className={`flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl border ${
+                activo ? 'bg-mogao-teal border-mogao-teal' : 'bg-white border-gray-200'
+            }`}
+        >
+            <Ionicons
+                name={config.icon}
+                size={15}
+                color={activo ? '#C9A227' : '#6B7280'}
+            />
+            <Text
+                className={`text-xs font-semibold ${activo ? 'text-white' : 'text-gray-500'}`}
+            >
+                {config.label}
+            </Text>
+        </TouchableOpacity>
     );
 }
